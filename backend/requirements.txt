@@ -1,0 +1,5 @@
+langchain
+elasticsearch
+langchain-community
+python-multipart
+pymupdf
