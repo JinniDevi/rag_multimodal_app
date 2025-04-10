@@ -26,11 +26,13 @@
 import React from 'react';
 import ChatBox from './components/ChatBox';
 import FileUploader from './components/FileUploader';
+import FileList from './components/FileList'; // 추가
 
 function App() {
   return (
     <div>
       <FileUploader />
+      <FileList />
       <ChatBox />
     </div>
   );

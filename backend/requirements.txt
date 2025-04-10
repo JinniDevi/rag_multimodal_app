@@ -1,5 +1,11 @@
 langchain
 elasticsearch
+langchain_openai
+langchain_elasticsearch
 langchain-community
 python-multipart
 pymupdf
+pillow
+torch
+
+# pip install git+https://github.com/openai/CLIP.git
