@@ -14,17 +14,13 @@ export const uploadFile = async (file) => {
   formData.append('file', file);
 
   // const isImage = file.type.startsWith('image/');
-
   // const endpoint = isImage ? '/upload-image/' : '/upload-text/';
 
-  const endpoint = '/upload';
-
-  const response = await axios.post(`${API_URL}${endpoint}`, formData, {
+  const response = await axios.post(`${API_URL}/upload`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
-
   return response.data;
 };
 
