@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { fetchFiles, uploadFile, askFileQuestion } from '../api';
+import { fetchFiles, uploadFile, deleteFile, askFileQuestion } from '../api';
 
 const ChatBox = () => {
   const [files, setFiles] = useState([]);
@@ -57,6 +57,18 @@ const ChatBox = () => {
     setIsLoading(false);
   };
 
+  const handleDelete = async (filename) => {
+    try {
+      await deleteFile(filename);
+      await loadFiles();  // 삭제 후 파일 목록 다시 불러오기
+      if (filename === selectedFile) {
+        setSelectedFile('');  // 선택된 파일 삭제되었으면 초기화
+      }
+    } catch (error) {
+      console.error('파일 삭제 실패', error);
+    }
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -104,7 +116,15 @@ const ChatBox = () => {
               alignItems: 'center'
             }}>
               <span>{file}</span>
-              {/* 삭제 기능은 나중에 추가 가능 */}
+              <button onClick={() => handleDelete(file)} style={{
+                marginLeft: '10px',
+                padding: '4px 10px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}>삭제</button>
             </li>
           ))}
         </ul>
