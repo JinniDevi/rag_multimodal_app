@@ -1,5 +1,12 @@
 {
   "dependencies": {
-    "axios": "^1.8.4"
+    "axios": "^1.8.4",
+    "react-toastify": "^11.0.5"
+  },
+  "scripts": {
+  "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
+  "build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
+  "test": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts test",
+  "eject": "react-scripts eject"
   }
 }

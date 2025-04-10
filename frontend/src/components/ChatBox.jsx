@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { fetchFiles, uploadFile, deleteFile, askFileQuestion } from '../api';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ChatBox = () => {
   const [files, setFiles] = useState([]);
@@ -8,13 +10,19 @@ const ChatBox = () => {
   const [question, setQuestion] = useState('');
   const [chats, setChats] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef(null);
 
   const loadFiles = async () => {
-    const fetchedFiles = await fetchFiles();
-    setFiles(fetchedFiles);
-    if (fetchedFiles.length > 0) {
-      setSelectedFile(fetchedFiles[0]);
+    try {
+      const fetchedFiles = await fetchFiles();
+      setFiles(fetchedFiles);
+      if (fetchedFiles.length > 0) {
+        setSelectedFile(fetchedFiles[0]);
+      }
+    } catch (error) {
+      console.error('파일 목록 불러오기 실패', error);
+      toast.error("❌ 파일 목록 불러오기 실패!");
     }
   };
 
@@ -23,7 +31,9 @@ const ChatBox = () => {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [chats]);
 
   const handleFileChange = (e) => {
@@ -32,9 +42,38 @@ const ChatBox = () => {
 
   const handleUpload = async () => {
     if (!fileToUpload) return;
-    await uploadFile(fileToUpload);
-    setFileToUpload(null);
-    await loadFiles();  // 업로드 후 파일 목록 새로고침
+
+    setUploadProgress(0);
+
+    try {
+      await uploadFile(fileToUpload, (progressEvent) => {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(percent);
+      });
+
+      toast.success("✅ 파일 업로드 성공!");
+      setFileToUpload(null);
+      setUploadProgress(0);
+      await loadFiles();
+    } catch (error) {
+      console.error('파일 업로드 실패', error);
+      toast.error("❌ 파일 업로드 실패!");
+      setUploadProgress(0);
+    }
+  };
+
+  const handleDelete = async (filename) => {
+    try {
+      await deleteFile(filename);
+      toast.success("✅ 파일 삭제 성공!");
+      await loadFiles();
+      if (filename === selectedFile) {
+        setSelectedFile('');
+      }
+    } catch (error) {
+      console.error('파일 삭제 실패', error);
+      toast.error("❌ 파일 삭제 실패!");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -57,18 +96,6 @@ const ChatBox = () => {
     setIsLoading(false);
   };
 
-  const handleDelete = async (filename) => {
-    try {
-      await deleteFile(filename);
-      await loadFiles();  // 삭제 후 파일 목록 다시 불러오기
-      if (filename === selectedFile) {
-        setSelectedFile('');  // 선택된 파일 삭제되었으면 초기화
-      }
-    } catch (error) {
-      console.error('파일 삭제 실패', error);
-    }
-  };
-
   return (
     <div style={{
       display: 'flex',
@@ -77,11 +104,9 @@ const ChatBox = () => {
       padding: '30px',
       fontFamily: 'Arial, sans-serif'
     }}>
+
       {/* 업로드 영역 */}
-      <div style={{
-        marginBottom: '30px',
-        textAlign: 'center'
-      }}>
+      <div style={{ marginBottom: '30px', textAlign: 'center' }}>
         <h2>📂 문서 또는 이미지 업로드</h2>
         <input type="file" onChange={handleFileChange} style={{ marginBottom: '10px' }} />
         <br />
@@ -91,18 +116,39 @@ const ChatBox = () => {
           color: 'white',
           border: 'none',
           borderRadius: '8px',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          marginTop: '10px'
         }}>
           업로드
         </button>
+
+        {/* 프로그레스 바 */}
+        {uploadProgress > 0 && (
+          <div style={{
+            width: '100%',
+            backgroundColor: '#eee',
+            borderRadius: '8px',
+            marginTop: '15px',
+            height: '20px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${uploadProgress}%`,
+              backgroundColor: '#4caf50',
+              textAlign: 'center',
+              color: 'white',
+              lineHeight: '20px',
+              transition: 'width 0.3s ease'
+            }}>
+              {uploadProgress}%
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 파일 목록 영역 */}
-      <div style={{
-        width: '100%',
-        maxWidth: '800px',
-        marginBottom: '30px'
-      }}>
+      <div style={{ width: '100%', maxWidth: '800px', marginBottom: '30px' }}>
         <h3>📄 업로드된 파일 목록</h3>
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {files.map((file) => (
@@ -130,7 +176,7 @@ const ChatBox = () => {
         </ul>
       </div>
 
-      {/* 채팅 영역 */}
+      {/* 챗봇 영역 */}
       <div style={{
         width: '100%',
         maxWidth: '800px',
@@ -141,15 +187,22 @@ const ChatBox = () => {
       }}>
         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>💬 파일 기반 질문 챗봇</h2>
 
-        <form onSubmit={handleSubmit} style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-          <select value={selectedFile} onChange={(e) => setSelectedFile(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', flex: 1 }}>
+        {/* 파일 선택 드롭다운 */}
+        <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+          <select value={selectedFile} onChange={(e) => setSelectedFile(e.target.value)} style={{
+            padding: '10px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            flex: 1
+          }}>
             <option value="">전체 검색</option>
             {files.map((file) => (
               <option key={file} value={file}>{file}</option>
             ))}
           </select>
-        </form>
+        </div>
 
+        {/* 질문 입력 영역 */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <input
             type="text"
@@ -168,6 +221,7 @@ const ChatBox = () => {
           }}>질문하기</button>
         </form>
 
+        {/* 채팅창 */}
         <div style={{
           backgroundColor: '#f9f9f9',
           borderRadius: '12px',
@@ -208,6 +262,19 @@ const ChatBox = () => {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* 토스트 알림 */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };

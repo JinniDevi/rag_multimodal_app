@@ -9,21 +9,16 @@ export const askTextQuestion = async (question) => {
 };
 
 // 파일 업로드 함수 추가
-export const uploadFile = async (file) => {
+export async function uploadFile(file, onUploadProgress) {
   const formData = new FormData();
   formData.append('file', file);
 
-  // const isImage = file.type.startsWith('image/');
-  // const endpoint = isImage ? '/upload-image/' : '/upload-text/';
-
   const response = await axios.post(`${API_URL}/upload`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress,
   });
   return response.data;
-};
-
+}
 
 // 파일 목록 조회
 export const fetchFiles = async () => {
