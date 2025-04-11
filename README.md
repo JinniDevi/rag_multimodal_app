@@ -36,7 +36,7 @@ npx create-react-app frontend
 
 Run `npm audit` for details.
 
-Success! Created frontend at C:\DevProject\PyCharm\rag-multimodal-app\frontend
+Success! Created frontend
 Inside that directory, you can run several commands:
 
   npm start
